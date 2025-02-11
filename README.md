@@ -1,0 +1,1 @@
+To run the compiler put your code in input.cpp and run compiler.py
