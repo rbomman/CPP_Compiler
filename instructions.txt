@@ -1,0 +1,93 @@
+
+Here is an explanation of what each of the pseduo-assembly instructions do
+
+## Overview
+
+- **Temporary Registers:**  
+  The compiler uses temporary registers (`t1`, `t2`, …) for intermediate results.
+
+- **Labels:**  
+  Unique labels (e.g., `func_main_1`, `while_start_2`) are generated for functions and control flow constructs to mark jump targets.
+
+- **Function Calling Convention:**  
+  Function calls are represented by a `CALL` instruction that evaluates arguments and transfers control to the function. The function's return value is placed in a temporary register (or designated return register) and then returned using `RET`.
+
+---
+
+## Data Movement
+
+- **MOV dest, src**  
+  Moves the value from `src` into the destination `dest`.  
+  _Usage:_ Initialization of variables, assignment statements, and transferring function call results.
+
+---
+
+## Arithmetic Operations
+
+- **ADD dest, op1, op2**  
+  Adds `op1` and `op2`, storing the result in `dest`.
+
+- **MUL dest, op1, op2**  
+  Multiplies `op1` by `op2`, storing the result in `dest`.
+
+- **DIV dest, op1, op2**  
+  Divides `op1` by `op2` using integer division and stores the result in `dest`.
+
+---
+
+## Comparison and Logical Operations
+
+- **CMP op1, op2**  
+  Compares `op1` and `op2` and sets internal condition flags for subsequent operations.
+
+- **SETL dest**  
+  Sets `dest` to 1 if `op1` is less than `op2` (as determined by a preceding CMP), otherwise sets `dest` to 0.
+
+- **SETG dest**  
+  Sets `dest` to 1 if `op1` is greater than `op2`, else 0.
+
+- **SETLE dest**  
+  Sets `dest` to 1 if `op1` is less than or equal to `op2`, else 0.
+
+- **SETGE dest**  
+  Sets `dest` to 1 if `op1` is greater than or equal to `op2`, else 0.
+
+- **SETE dest**  
+  Sets `dest` to 1 if `op1` equals `op2`, else 0.
+
+- **SETNE dest**  
+  Sets `dest` to 1 if `op1` does not equal `op2`, else 0.
+
+- **AND dest, op1, op2**  
+  Performs a bitwise AND on `op1` and `op2` (interpreted as Boolean values: 0 for false, 1 for true) and stores the result in `dest`.
+
+- **OR dest, op1, op2**  
+  Performs a bitwise OR on `op1` and `op2` and stores the result in `dest`.
+
+---
+
+## Control Flow
+
+- **JE label**  
+  Jumps to the instruction at `label` if the result of the preceding CMP indicates equality (or if the compared value is 0, typically used for false conditions).
+
+- **JMP label**  
+  Unconditionally jumps to the instruction at `label`.
+
+- **LABEL label**  
+  Marks a location in the instruction stream as a jump target.
+
+- **HALT**  
+  Stops execution. Typically emitted after the initial call to `main`.
+
+---
+
+## Function Calls and Returns
+
+- **CALL function, arg1, arg2, ... -> dest**  
+  Calls the function named `function` with evaluated arguments. The function's return value is stored in `dest`.
+
+- **RET**  
+  Returns from a function. Before RET is executed, the function’s return value is usually moved into a designated return register (often referred to as `ret`).
+
+---
