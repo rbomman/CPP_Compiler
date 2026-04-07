@@ -121,6 +121,22 @@ Examples:
 
 Those choices keep the compiler compact while still supporting nontrivial language features.
 
+## Repository Layout
+
+The project is organized around a small set of modules with clear responsibilities:
+
+- `lexer.py` handles tokenization
+- `cpp_parser.py` defines the AST and parses source into that AST
+- `semantic_analyzer.py` performs scope and type validation
+- `optimizer.py` contains both the AST optimizer and the final peephole pass
+- `ir.py` defines the IR and performs AST-to-IR lowering
+- `code_generator.py` renders IR instructions into pseudo-assembly text
+- `virtual_cpu.py` executes the pseudo-assembly
+- `compiler.py` wires the stages together for normal use
+- `ast_visualizer.py` provides AST inspection utilities
+
+That layout mirrors the compiler pipeline closely, which makes the codebase easier to navigate.
+
 ## Lexer
 
 The lexer is regex-based.
@@ -232,6 +248,18 @@ The AST preserves source intent. It still has concepts like:
 
 It does not try to model addresses, slots, or hidden buffers yet. That work belongs to lowering.
 
+### Typical AST Shapes
+
+A few examples of how source constructs are represented:
+
+- `int x = 5;` becomes a variable-declaration node with type, name, and initializer
+- `arr[i] = value;` becomes an array-assignment node with array name, index expression, and value expression
+- `obj.field = rhs;` becomes a field-assignment node whose left side is a nested field-access tree
+- `ptr->field` becomes a field-access whose base is a unary dereference expression
+- `for (...) { ... }` becomes a for-statement node with initializer, condition, update, and body fields
+
+That structure keeps parsing readable and gives later stages a uniform shape to reason about.
+
 ## Semantic Analysis
 
 Semantic analysis turns parsed structure into a valid, typed program or rejects it.
@@ -304,6 +332,16 @@ Assignment is type-checked by target category:
 - field assignment checks field compatibility
 - pointer assignment checks pointee compatibility
 - struct assignment checks aggregate type equality
+
+### Name Lookup Rules
+
+Name lookup proceeds from innermost scope outward:
+
+1. current local scope
+2. outer local scopes
+3. globals
+
+This is simple lexical shadowing. The analyzer does not model namespaces, overloading, or separate translation units.
 
 ### Numeric Promotion
 
@@ -382,6 +420,19 @@ The IR consists of small structured instructions. Each instruction has:
 
 This is intentionally minimal. The project does not introduce a full compiler framework just to gain explicit lowering.
 
+### Important IR Instruction Families
+
+The IR uses a few distinct groups of instructions:
+
+- storage: `ALLOC`, `MOV`
+- address formation: `ADDR`, `INDEXADDR`, `FIELDPTR`
+- memory access: `LOADPTR`, `STOREPTR`, `COPY`
+- arithmetic and logic: `ADD`, `SUB`, `MUL`, `DIV`, `MOD`, `POW`, `AND`, `OR`
+- comparison and branching: `CMP`, `SET*`, `JMP`, `JE`, `JL`, `LABEL`
+- calls and returns: `CALL`, `RET`, `HALT`
+
+This grouping is useful because it shows how much of the language is really just combinations of a small number of storage and control-flow primitives.
+
 ### What The IR Generator Owns
 
 The IR generator is responsible for most of the real backend work:
@@ -435,6 +486,15 @@ Struct values are lowered explicitly:
 
 This avoids special aggregate behavior in the VM instruction set.
 
+### Why Copies Are Explicit
+
+The compiler does not treat struct assignment as syntax sugar for field-by-field rewriting in every stage. Instead, aggregate values are lowered into explicit copy operations over contiguous memory ranges.
+
+That has two advantages:
+
+- the runtime behavior is uniform for local assignment, parameter passing, and returns
+- later backend work can optimize copies without changing source-level semantics
+
 ## Pseudo-Assembly
 
 The pseudo-assembly layer is intentionally thin.
@@ -459,6 +519,15 @@ Keeping the pseudo-assembly generator simple has two benefits:
 
 - backend logic stays centralized in the IR generator
 - the generated output is easy to read because it directly reflects the lowered IR
+
+### Assembly Readability
+
+The pseudo-assembly is intentionally human-readable. It is not modeled after a specific hardware ISA, but it is stable enough to inspect by eye when debugging:
+
+- labels make control flow obvious
+- temporaries expose intermediate lowering steps
+- address-building instructions make lvalue computation visible
+- aggregate copies remain explicit
 
 ## Peephole Optimization
 
@@ -527,6 +596,10 @@ Allocation is simple:
 - slot values are initialized to zero
 
 This is not a production allocator or stack layout, but it is sufficient for the language subset and makes memory behavior explicit.
+
+### Scalar Globals Snapshot
+
+The top-level driver prints a snapshot of scalar global values after execution. Aggregate globals are not yet expanded into a structured debug printout, which keeps the default output short but means full memory inspection still requires reading the generated assembly or extending the VM tooling.
 
 ### Call Frames
 
@@ -714,6 +787,16 @@ Runtime failures include instruction context. A VM error reports:
 - the exact pseudo-assembly instruction being executed
 
 This is not full source-level debug mapping, but it is enough to make backend and runtime failures practical to investigate.
+
+### Diagnostic Tradeoffs
+
+The diagnostic system is intentionally pragmatic:
+
+- syntax errors are the most source-precise
+- semantic errors are type-aware and function-aware
+- runtime errors are instruction-aware rather than source-aware
+
+That reflects where each kind of information naturally exists in the pipeline.
 
 ## Testing
 
