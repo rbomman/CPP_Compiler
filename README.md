@@ -2,7 +2,7 @@
 
 `CPP_Compiler` is a compact standalone compiler for a custom C-like language. It reads source from `input.cpp`, tokenizes it, parses it into an abstract syntax tree, validates the program semantically, performs a small AST optimization pass, lowers the result into an explicit intermediate representation, formats that IR as pseudo-assembly, and executes the final program on a custom virtual CPU.
 
-This is not a partial C++ implementation. It is a deliberately constrained language and runtime designed to make the compiler pipeline readable, inspectable, and complete at a small scale.
+This is a partial C++ implementation. It is a deliberately constrained language and runtime designed to make the compiler pipeline readable, inspectable, and complete at a small scale.
 
 ## Table Of Contents
 
