@@ -1,41 +1,83 @@
-// Global declarations
-int globalVar = 42;
-bool globalFlag = false;
+struct Point {
+    int x;
+    int y;
+};
 
-// A helper function that adds two integers.
-int add(int x, int y) {
-    return x + y;
+struct Stats {
+    struct Point point;
+    float weight;
+    bool active;
+};
+
+struct Point make_point(int x, int y) {
+    struct Point p;
+    p.x = x;
+    p.y = y;
+    return p;
 }
 
-int sub(int x, int y) {
-    return x - y;
+float scale_sum(struct Point p, float factor) {
+    return (p.x + p.y) * factor;
 }
 
-int main() {
-    
-    // Local variable declarations
-    int a = 5;
-    int b = 10;
-    bool flag = true;
-    
-    // Function call and arithmetic
-    int c = add(a, b);   // c = a + b
-    int d = sub(a,b); // d = a - b
-    int e = a % b; // e = a % b
+int sum_array(int* values, int count) {
+    int total = 0;
+    int i = 0;
 
-    // Conditional using relational and logical operators
-    if (flag && (c > 10)) {
-        a = a + 1;
-    } else {
-        a = a - 1;
+    for (i = 0; i < count; i = i + 1) {
+        total = total + *(values + i);
     }
-    
-    // Loop: increment 'a' until it is no longer less than 'c'
-    while (a < c) {
-        a = a + 2;
-    }
-    
-    // Return the final value of a.
-    return a;
 
+    return total;
+}
+
+float main() {
+    int values[4];
+    struct Stats stats;
+    struct Stats* stats_ptr = &stats;
+    struct Point copy;
+    int total = 0;
+    int i = 0;
+    float result = 0.0;
+
+    values[0] = 2;
+    values[1] = 4;
+    values[2] = 6;
+    values[3] = 8;
+
+    stats.point = make_point(3, 5);
+    stats.weight = 1.5;
+    stats.active = true;
+
+    // Demonstrate pointer-based field access.
+    stats_ptr->point.x = stats_ptr->point.x + 1;
+
+    // Demonstrate whole-struct copy.
+    copy = stats.point;
+
+    total = sum_array(&values[0], 4);
+    result = scale_sum(copy, stats.weight);
+
+    // Demonstrate while/break/continue and boolean conditions.
+    while (true) {
+        if (!stats.active) {
+            break;
+        }
+
+        result = result + total;
+
+        for (i = 0; i < 4; i = i + 1) {
+            if ((i % 2) == 0) {
+                continue;
+            }
+            result = result + (values[i] / 2.0);
+        }
+
+        stats.active = false;
+    }
+
+    // Demonstrate float arithmetic and exponentiation.
+    result = result + (2.0 ^ 3.0);
+
+    return result;
 }

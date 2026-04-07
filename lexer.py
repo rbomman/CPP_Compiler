@@ -46,18 +46,20 @@ def tokenize(code):
     
     # Token specification table
     token_specification = [
-        # Include 'bool', 'true', 'false' along with other keywords.
-        ('KEYWORD',   r'\b(int|bool|return|if|else|while|true|false)\b'),
+        # Include primitive types and control-flow keywords.
+        ('KEYWORD',   r'\b(int|float|bool|struct|return|if|else|while|for|break|continue|true|false)\b'),
+        ('FLOAT',     r'\b\d+\.\d+\b'),
         ('NUMBER',    r'\b\d+\b'),
         ('IDENTIFIER',r'\b[A-Za-z_]\w*\b'),
         ('LAND',      r'&&'),
         ('LOR',       r'\|\|'),
+        ('ARROW',     r'->'),
         ('EQ',        r'=='),
         ('NEQ',       r'!='),
         ('LE',        r'<='),
         ('GE',        r'>='),
         ('EXP',       r'\^'),
-        ('SYMBOL',    r'[<>+\-\*/%();={}\[\],]'),
+        ('SYMBOL',    r'[!&<>+\-\*/%();={}\[\],.]'),
         ('WHITESPACE',r'\s+'),
         ('UNKNOWN',   r'.')
     ]
@@ -80,6 +82,8 @@ def tokenize(code):
 
         if kind == 'WHITESPACE':
             continue
+        if kind == 'UNKNOWN':
+            raise SyntaxError(f"Unexpected character '{value}' at line {line_num}, column {column}.")
         tokens.append((kind, value, line_num, column))
     return tokens
 

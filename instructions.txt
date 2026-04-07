@@ -1,93 +1,110 @@
+Pseudo-Assembly Instruction Reference
+=====================================
 
-Here is an explanation of what each of the pseduo-assembly instructions do
+The compiler lowers IR into a compact pseudo-assembly language executed by `virtual_cpu.py`.
 
-## Overview
+Storage And Addressing
+----------------------
 
-- **Temporary Registers:**  
-  The compiler uses temporary registers (`t1`, `t2`, …) for intermediate results.
+`ALLOC name, size`
 
-- **Labels:**  
-  Unique labels (e.g., `func_main_1`, `while_start_2`) are generated for functions and control flow constructs to mark jump targets.
+- Allocates `size` contiguous slots for `name`
 
-- **Function Calling Convention:**  
-  Function calls are represented by a `CALL` instruction that evaluates arguments and transfers control to the function. The function's return value is placed in a temporary register (or designated return register) and then returned using `RET`.
+`MOV dest, src`
 
----
+- Writes a scalar or pointer value into `dest`
 
-## Data Movement
+`ADDR dest, name, stride, span`
 
-- **MOV dest, src**  
-  Moves the value from `src` into the destination `dest`.  
-  _Usage:_ Initialization of variables, assignment statements, and transferring function call results.
+- Produces a pointer to `name`
+- `stride` is used by pointer arithmetic
+- `span` is the size of the pointed value for bounds-checked dereference/copy
 
----
+`INDEXADDR dest, base_ptr, index, stride, span`
 
-## Arithmetic Operations
+- Produces a pointer to an indexed element within a larger allocation
 
-- **ADD dest, op1, op2**  
-  Adds `op1` and `op2`, storing the result in `dest`.
+`FIELDPTR dest, base_ptr, offset, stride, span`
 
-- **MUL dest, op1, op2**  
-  Multiplies `op1` by `op2`, storing the result in `dest`.
+- Produces a pointer to a field at a slot offset within an aggregate
 
-- **DIV dest, op1, op2**  
-  Divides `op1` by `op2` using integer division and stores the result in `dest`.
+Pointer Reads, Writes, And Copies
+---------------------------------
 
----
+`LOADPTR dest, ptr`
 
-## Comparison and Logical Operations
+- Reads the value at `ptr`
+- Fails if the read is out of bounds
 
-- **CMP op1, op2**  
-  Compares `op1` and `op2` and sets internal condition flags for subsequent operations.
+`STOREPTR ptr, value`
 
-- **SETL dest**  
-  Sets `dest` to 1 if `op1` is less than `op2` (as determined by a preceding CMP), otherwise sets `dest` to 0.
+- Writes `value` through `ptr`
+- Fails if the write is out of bounds
 
-- **SETG dest**  
-  Sets `dest` to 1 if `op1` is greater than `op2`, else 0.
+`COPY dest_ptr, src_ptr, size`
 
-- **SETLE dest**  
-  Sets `dest` to 1 if `op1` is less than or equal to `op2`, else 0.
+- Copies `size` contiguous slots
+- Used for whole-struct assignment and struct-by-value call/return paths
+- Fails if either range is out of bounds
 
-- **SETGE dest**  
-  Sets `dest` to 1 if `op1` is greater than or equal to `op2`, else 0.
+Pointer Arithmetic
+------------------
 
-- **SETE dest**  
-  Sets `dest` to 1 if `op1` equals `op2`, else 0.
+`PTRADD dest, ptr, offset`
+`PTRSUB dest, ptr, offset`
 
-- **SETNE dest**  
-  Sets `dest` to 1 if `op1` does not equal `op2`, else 0.
+- Moves `ptr.addr` by `offset * ptr.stride`
+- Bounds are enforced later on dereference or copy
 
-- **AND dest, op1, op2**  
-  Performs a bitwise AND on `op1` and `op2` (interpreted as Boolean values: 0 for false, 1 for true) and stores the result in `dest`.
+Arithmetic And Logic
+--------------------
 
-- **OR dest, op1, op2**  
-  Performs a bitwise OR on `op1` and `op2` and stores the result in `dest`.
+- `ADD`
+- `SUB`
+- `MUL`
+- `DIV`
+- `MOD`
+- `POW`
+- `AND`
+- `OR`
 
----
+Comparison And Control Flow
+---------------------------
 
-## Control Flow
+- `CMP`
+- `SETL`
+- `SETG`
+- `SETLE`
+- `SETGE`
+- `SETE`
+- `SETNE`
+- `LABEL`
+- `JMP`
+- `JE`
+- `JL`
 
-- **JE label**  
-  Jumps to the instruction at `label` if the result of the preceding CMP indicates equality (or if the compared value is 0, typically used for false conditions).
+Calls
+-----
 
-- **JMP label**  
-  Unconditionally jumps to the instruction at `label`.
+`CALL target -> dest`
+`CALL target, arg1, arg2, ... -> dest`
 
-- **LABEL label**  
-  Marks a location in the instruction stream as a jump target.
+- Calls `target`
+- Stores a scalar return value in `dest`
+- Struct-returning functions receive a hidden return-buffer pointer as argument 0
 
-- **HALT**  
-  Stops execution. Typically emitted after the initial call to `main`.
+`RET`
 
----
+- Returns from the current function
 
-## Function Calls and Returns
+`HALT`
 
-- **CALL function, arg1, arg2, ... -> dest**  
-  Calls the function named `function` with evaluated arguments. The function's return value is stored in `dest`.
+- Stops execution
 
-- **RET**  
-  Returns from a function. Before RET is executed, the function’s return value is usually moved into a designated return register (often referred to as `ret`).
+Notes
+-----
 
----
+- The VM is address-based, not just name-based
+- Structs are copied with `COPY`
+- Arrays of structs and `->` access are supported
+- Runtime failures include instruction context in the reported error
